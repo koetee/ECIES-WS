@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ECIES } from '../../onion/crypto/ecies.js'; // Убедитесь, что путь правильный
+import { ECIES } from '../modules/ecies/index.js'; // Убедитесь, что путь правильный
 
 describe('ECIES Encryption and Decryption', () => {
   let ecies: ECIES;
