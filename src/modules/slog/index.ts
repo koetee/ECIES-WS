@@ -10,4 +10,4 @@ export { TextFormatter } from './formatters/textFormatter.js';
 export { ConsoleTransport } from './transports/consoleTransport.js';
 export { FileTransport } from './transports/fileTransport.js';
 export { LogLevel } from './interfaces/logger.js';
-export { LogLevelFilter } from './filters/logLevelFilter.js'
+export { LogLevelFilter } from './filters/logLevelFilter.js';
