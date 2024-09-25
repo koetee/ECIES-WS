@@ -116,4 +116,22 @@ describe('ECIES Encryption and Decryption', () => {
 
     expect(decryptedMessage).toEqual(message); // Decrypted should match original
   });
+
+  it('should correctly encrypt and decrypt multiple distinct messages', () => {
+    const messages = ['First Message', 'Second Message', 'Third Message'];
+    const encryptionResults = messages.map((msg) =>
+      ecies.encrypt(msg, keyPair.publicKey),
+    );
+
+    const decryptedMessages = encryptionResults.map((result) =>
+      ecies.decrypt(
+        result.ciphertext,
+        result.mac,
+        result.ephemeralPublicKey,
+        keyPair.privateKey,
+      ),
+    );
+
+    expect(decryptedMessages).toEqual(messages); // Each message should be correctly decrypted
+  });
 });
