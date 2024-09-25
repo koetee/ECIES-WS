@@ -1,4 +1,4 @@
-import { ECIES } from './onion/crypto/ecies.js'; // Убедитесь, что путь правильный
+import { ECIES } from './modules/ecies/index.js'; // Убедитесь, что путь правильный
 
 // Функция для логирования
 function log(message: string, data?: unknown): void {
