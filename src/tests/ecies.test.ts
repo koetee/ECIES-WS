@@ -5,7 +5,7 @@ describe('ECIES Encryption and Decryption', () => {
   let ecies: ECIES;
   let keyPair: { publicKey: string; privateKey: string };
 
-  // Инициализация перед каждым тестом
+  // Initialize before each test
   beforeEach(() => {
     ecies = new ECIES();
     keyPair = ecies.generateKeyPair();
@@ -34,7 +34,7 @@ describe('ECIES Encryption and Decryption', () => {
       keyPair.privateKey,
     );
 
-    // Проверка: исходное сообщение должно совпадать с расшифрованным
+    // Original message should match decrypted message
     expect(decryptedMessage).toEqual(message);
   });
 
@@ -44,7 +44,7 @@ describe('ECIES Encryption and Decryption', () => {
     // Encrypt the message
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Изменяем шифротекст для проверки некорректной верификации MAC
+    // Tamper with the ciphertext
     encryptionResult.ciphertext[0] ^= 1;
 
     expect(() => {
