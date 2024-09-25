@@ -38,43 +38,6 @@ describe('ECIES Encryption and Decryption', () => {
     expect(decryptedMessage).toEqual(message);
   });
 
-  it('should fail MAC verification for tampered ciphertext', () => {
-    const message = 'Test message';
-
-    // Encrypt the message
-    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
-
-    // Tamper with the ciphertext
-    encryptionResult.ciphertext[0] ^= 1;
-
-    expect(() => {
-      ecies.decrypt(
-        encryptionResult.ciphertext,
-        encryptionResult.mac,
-        encryptionResult.ephemeralPublicKey,
-        keyPair.privateKey,
-      );
-    }).toThrow('MAC verification failed');
-  });
-
-  it('should fail decryption with an incorrect private key', () => {
-    const message = 'Hello, ECIES!';
-    const wrongKeyPair = ecies.generateKeyPair(); // Generate another key pair
-
-    // Encrypt with the correct public key
-    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
-
-    // Attempt decryption with a different private key
-    expect(() => {
-      ecies.decrypt(
-        encryptionResult.ciphertext,
-        encryptionResult.mac,
-        encryptionResult.ephemeralPublicKey,
-        wrongKeyPair.privateKey,
-      );
-    }).toThrow(); // Expect an error because of the wrong private key
-  });
-
   it('should correctly handle an empty message', () => {
     const message = '';
 
@@ -133,6 +96,91 @@ describe('ECIES Encryption and Decryption', () => {
     );
 
     expect(decryptedMessages).toEqual(messages); // Each message should be correctly decrypted
+  });
+
+  it('should fail MAC verification for tampered ciphertext', () => {
+    const message = 'Test message';
+
+    // Encrypt the message
+    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
+
+    // Tamper with the ciphertext
+    encryptionResult.ciphertext[0] ^= 1;
+
+    expect(() => {
+      ecies.decrypt(
+        encryptionResult.ciphertext,
+        encryptionResult.mac,
+        encryptionResult.ephemeralPublicKey,
+        keyPair.privateKey,
+      );
+    }).toThrow('MAC verification failed');
+  });
+
+  it('should fail decryption with an incorrect private key', () => {
+    const message = 'Hello, ECIES!';
+    const wrongKeyPair = ecies.generateKeyPair(); // Generate another key pair
+
+    // Encrypt with the correct public key
+    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
+
+    // Attempt decryption with a different private key
+    expect(() => {
+      ecies.decrypt(
+        encryptionResult.ciphertext,
+        encryptionResult.mac,
+        encryptionResult.ephemeralPublicKey,
+        wrongKeyPair.privateKey,
+      );
+    }).toThrow(); // Expect an error because of the wrong private key
+  });
+
+  it('should fail encryption with an invalid public key', () => {
+    const message = 'Test with invalid public key';
+    const invalidPublicKey = '1234'; // Invalid or malformed public key
+
+    expect(() => {
+      ecies.encrypt(message, invalidPublicKey);
+    }).toThrow(); // Expect an error when using an invalid public key
+  });
+
+  it('should fail decryption with tampered ephemeral public key', () => {
+    const message = 'Test message';
+
+    // Encrypt the message
+    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
+
+    // Tamper with the ephemeral public key
+    const tamperedEphemeralKey =
+      encryptionResult.ephemeralPublicKey.slice(0, -2) + '00';
+
+    expect(() => {
+      ecies.decrypt(
+        encryptionResult.ciphertext,
+        encryptionResult.mac,
+        tamperedEphemeralKey,
+        keyPair.privateKey,
+      );
+    }).toThrow(); // Decryption should fail due to the tampered ephemeral public key
+  });
+
+  it('should fail decryption with a truncated ciphertext', () => {
+    const message = 'Test message';
+
+    // Encrypt the message
+    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
+
+    // Truncate the ciphertext (e.g., remove some bytes)
+    const truncatedCiphertext = encryptionResult.ciphertext.slice(0, -5);
+
+    expect(() => {
+      ecies.decrypt(
+        truncatedCiphertext,
+        encryptionResult.mac,
+        encryptionResult.ephemeralPublicKey,
+        keyPair.privateKey,
+      );
+    }).toThrow(); // Expect decryption to fail due to the truncated ciphertext
   });
 
   it('should produce different ciphertexts for the same message with different ephemeral keys', () => {
