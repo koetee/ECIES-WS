@@ -91,4 +91,29 @@ describe('ECIES Encryption and Decryption', () => {
 
     expect(decryptedMessage).toEqual(message); // Should return an empty string
   });
+
+  it('should correctly encrypt and decrypt a large message', () => {
+    const length = 4096; // 4096 bytes (32768 bits)
+    const randomBytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      randomBytes[i] = Math.floor(Math.random() * 64); // Generate a random byte between 0 and 64
+    }
+
+    const message = Array.from(randomBytes)
+      .map((byte) => String.fromCharCode(byte))
+      .join(''); // Convert to string
+
+    // Encrypt the large message
+    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
+
+    // Decrypt the large message
+    const decryptedMessage = ecies.decrypt(
+      encryptionResult.ciphertext,
+      encryptionResult.mac,
+      encryptionResult.ephemeralPublicKey,
+      keyPair.privateKey,
+    );
+
+    expect(decryptedMessage).toEqual(message); // Decrypted should match original
+  });
 });
