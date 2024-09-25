@@ -74,4 +74,21 @@ describe('ECIES Encryption and Decryption', () => {
       );
     }).toThrow(); // Expect an error because of the wrong private key
   });
+
+  it('should correctly handle an empty message', () => {
+    const message = '';
+
+    // Encrypt the empty message
+    const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
+
+    // Decrypt the empty message
+    const decryptedMessage = ecies.decrypt(
+      encryptionResult.ciphertext,
+      encryptionResult.mac,
+      encryptionResult.ephemeralPublicKey,
+      keyPair.privateKey,
+    );
+
+    expect(decryptedMessage).toEqual(message); // Should return an empty string
+  });
 });
