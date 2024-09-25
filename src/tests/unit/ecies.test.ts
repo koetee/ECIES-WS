@@ -134,4 +134,38 @@ describe('ECIES Encryption and Decryption', () => {
 
     expect(decryptedMessages).toEqual(messages); // Each message should be correctly decrypted
   });
+
+  it('should produce different ciphertexts for the same message with different ephemeral keys', () => {
+    const message = 'Repeated message';
+
+    // Encrypt the same message twice
+    const encryptionResult1 = ecies.encrypt(message, keyPair.publicKey);
+    const encryptionResult2 = ecies.encrypt(message, keyPair.publicKey);
+
+    // Ensure that ciphertexts and ephemeral public keys are different
+    expect(encryptionResult1.ciphertext).not.toEqual(
+      encryptionResult2.ciphertext,
+    );
+    expect(encryptionResult1.ephemeralPublicKey).not.toEqual(
+      encryptionResult2.ephemeralPublicKey,
+    );
+
+    // Decrypt both to verify correctness
+    const decryptedMessage1 = ecies.decrypt(
+      encryptionResult1.ciphertext,
+      encryptionResult1.mac,
+      encryptionResult1.ephemeralPublicKey,
+      keyPair.privateKey,
+    );
+    const decryptedMessage2 = ecies.decrypt(
+      encryptionResult2.ciphertext,
+      encryptionResult2.mac,
+      encryptionResult2.ephemeralPublicKey,
+      keyPair.privateKey,
+    );
+
+    // Both should correctly decrypt to the original message
+    expect(decryptedMessage1).toEqual(message);
+    expect(decryptedMessage2).toEqual(message);
+  });
 });
