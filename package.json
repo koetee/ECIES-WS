@@ -40,7 +40,7 @@
     "prettier:check": "prettier \"{src,__{tests}__}/**/*.{ts,mts}\" --config .prettierrc --check",
     "test:watch": "vitest unit"
   },
-  "author": "Jakub Synowiec <jsynowiec@users.noreply.github.com>",
+  "author": "",
   "license": "Apache-2.0",
   "dependencies": {
     "aes-js": "^3.1.2",
