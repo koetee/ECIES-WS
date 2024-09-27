@@ -1,13 +1,35 @@
+// src/modules/ecies/tests/ecies.test.ts
+
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ECIES } from '../../modules/ecies/index.js'; // Убедитесь, что путь правильный
+import {
+  ECIES,
+  Secp256k1Curve,
+  AES,
+  SHA256Kdf,
+  KeyPair,
+  Cipher,
+  KDF,
+  EllipticCurve,
+} from '../../modules/ecies/index.js'; // Убедитесь, что путь правильный
 
 describe('ECIES Encryption and Decryption', () => {
   let ecies: ECIES;
-  let keyPair: { publicKey: string; privateKey: string };
+  let keyPair: KeyPair;
+  let curve: EllipticCurve;
+  let cipher: Cipher;
+  let kdf: KDF;
 
-  // Initialize before each test
+  // Инициализация перед каждым тестом
   beforeEach(() => {
-    ecies = new ECIES();
+    // Создаем экземпляры зависимостей
+    curve = new Secp256k1Curve();
+    cipher = new AES();
+    kdf = new SHA256Kdf();
+
+    // Создаем экземпляр ECIES с зависимостями
+    ecies = new ECIES(curve, cipher, kdf);
+
+    // Генерируем ключевую пару для получателя
     keyPair = ecies.generateKeyPair();
   });
 
@@ -19,14 +41,14 @@ describe('ECIES Encryption and Decryption', () => {
   it('should correctly encrypt and decrypt a message', () => {
     const message = 'Hello, ECIES!';
 
-    // Encrypt the message
+    // Шифруем сообщение
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
     expect(encryptionResult.ciphertext).toBeDefined();
     expect(encryptionResult.mac).toBeDefined();
     expect(encryptionResult.ephemeralPublicKey).toBeDefined();
 
-    // Decrypt the message
+    // Расшифровываем сообщение
     const decryptedMessage = ecies.decrypt(
       encryptionResult.ciphertext,
       encryptionResult.mac,
@@ -34,17 +56,17 @@ describe('ECIES Encryption and Decryption', () => {
       keyPair.privateKey,
     );
 
-    // Original message should match decrypted message
+    // Проверка: исходное сообщение должно совпадать с расшифрованным
     expect(decryptedMessage).toEqual(message);
   });
 
   it('should correctly handle an empty message', () => {
     const message = '';
 
-    // Encrypt the empty message
+    // Шифруем пустое сообщение
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Decrypt the empty message
+    // Расшифровываем пустое сообщение
     const decryptedMessage = ecies.decrypt(
       encryptionResult.ciphertext,
       encryptionResult.mac,
@@ -52,24 +74,24 @@ describe('ECIES Encryption and Decryption', () => {
       keyPair.privateKey,
     );
 
-    expect(decryptedMessage).toEqual(message); // Should return an empty string
+    expect(decryptedMessage).toEqual(message); // Должен вернуть пустую строку
   });
 
   it('should correctly encrypt and decrypt a large message', () => {
-    const length = 4096; // 4096 bytes (32768 bits)
+    const length = 4096; // 4096 байт (32768 бит)
     const randomBytes = new Uint8Array(length);
     for (let i = 0; i < length; i++) {
-      randomBytes[i] = Math.floor(Math.random() * 64); // Generate a random byte between 0 and 64
+      randomBytes[i] = Math.floor(Math.random() * 64); // Генерируем случайный байт между 0 и 64
     }
 
     const message = Array.from(randomBytes)
       .map((byte) => String.fromCharCode(byte))
-      .join(''); // Convert to string
+      .join(''); // Конвертируем в строку
 
-    // Encrypt the large message
+    // Шифруем большое сообщение
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Decrypt the large message
+    // Расшифровываем большое сообщение
     const decryptedMessage = ecies.decrypt(
       encryptionResult.ciphertext,
       encryptionResult.mac,
@@ -77,7 +99,7 @@ describe('ECIES Encryption and Decryption', () => {
       keyPair.privateKey,
     );
 
-    expect(decryptedMessage).toEqual(message); // Decrypted should match original
+    expect(decryptedMessage).toEqual(message); // Расшифрованный должен совпадать с исходным
   });
 
   it('should correctly encrypt and decrypt multiple distinct messages', () => {
@@ -95,16 +117,16 @@ describe('ECIES Encryption and Decryption', () => {
       ),
     );
 
-    expect(decryptedMessages).toEqual(messages); // Each message should be correctly decrypted
+    expect(decryptedMessages).toEqual(messages); // Каждое сообщение должно быть корректно расшифровано
   });
 
   it('should fail MAC verification for tampered ciphertext', () => {
     const message = 'Test message';
 
-    // Encrypt the message
+    // Шифруем сообщение
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Tamper with the ciphertext
+    // Изменяем шифротекст для проверки некорректной верификации MAC
     encryptionResult.ciphertext[0] ^= 1;
 
     expect(() => {
@@ -119,12 +141,12 @@ describe('ECIES Encryption and Decryption', () => {
 
   it('should fail decryption with an incorrect private key', () => {
     const message = 'Hello, ECIES!';
-    const wrongKeyPair = ecies.generateKeyPair(); // Generate another key pair
+    const wrongKeyPair = ecies.generateKeyPair(); // Генерируем другую пару ключей
 
-    // Encrypt with the correct public key
+    // Шифруем с правильным публичным ключом
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Attempt decryption with a different private key
+    // Пытаемся расшифровать с неправильным приватным ключом
     expect(() => {
       ecies.decrypt(
         encryptionResult.ciphertext,
@@ -132,25 +154,25 @@ describe('ECIES Encryption and Decryption', () => {
         encryptionResult.ephemeralPublicKey,
         wrongKeyPair.privateKey,
       );
-    }).toThrow(); // Expect an error because of the wrong private key
+    }).toThrow(); // Ожидаем ошибку из-за неправильного приватного ключа
   });
 
   it('should fail encryption with an invalid public key', () => {
     const message = 'Test with invalid public key';
-    const invalidPublicKey = '1234'; // Invalid or malformed public key
+    const invalidPublicKey = '1234'; // Неверный или поврежденный публичный ключ
 
     expect(() => {
       ecies.encrypt(message, invalidPublicKey);
-    }).toThrow(); // Expect an error when using an invalid public key
+    }).toThrow(); // Ожидаем ошибку при использовании неверного публичного ключа
   });
 
   it('should fail decryption with tampered ephemeral public key', () => {
     const message = 'Test message';
 
-    // Encrypt the message
+    // Шифруем сообщение
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Tamper with the ephemeral public key
+    // Изменяем эфемерный публичный ключ
     const tamperedEphemeralKey =
       encryptionResult.ephemeralPublicKey.slice(0, -2) + '00';
 
@@ -161,16 +183,16 @@ describe('ECIES Encryption and Decryption', () => {
         tamperedEphemeralKey,
         keyPair.privateKey,
       );
-    }).toThrow(); // Decryption should fail due to the tampered ephemeral public key
+    }).toThrow(); // Дешифрование должно провалиться из-за измененного эфемерного публичного ключа
   });
 
   it('should fail decryption with a truncated ciphertext', () => {
     const message = 'Test message';
 
-    // Encrypt the message
+    // Шифруем сообщение
     const encryptionResult = ecies.encrypt(message, keyPair.publicKey);
 
-    // Truncate the ciphertext (e.g., remove some bytes)
+    // Обрезаем шифротекст (например, удаляем несколько байтов)
     const truncatedCiphertext = encryptionResult.ciphertext.slice(0, -5);
 
     expect(() => {
@@ -180,17 +202,17 @@ describe('ECIES Encryption and Decryption', () => {
         encryptionResult.ephemeralPublicKey,
         keyPair.privateKey,
       );
-    }).toThrow(); // Expect decryption to fail due to the truncated ciphertext
+    }).toThrow(); // Ожидаем ошибку при дешифровке из-за обрезанного шифротекста
   });
 
   it('should produce different ciphertexts for the same message with different ephemeral keys', () => {
     const message = 'Repeated message';
 
-    // Encrypt the same message twice
+    // Шифруем одно и то же сообщение дважды
     const encryptionResult1 = ecies.encrypt(message, keyPair.publicKey);
     const encryptionResult2 = ecies.encrypt(message, keyPair.publicKey);
 
-    // Ensure that ciphertexts and ephemeral public keys are different
+    // Убедимся, что шифротексты и эфемерные публичные ключи различны
     expect(encryptionResult1.ciphertext).not.toEqual(
       encryptionResult2.ciphertext,
     );
@@ -198,7 +220,7 @@ describe('ECIES Encryption and Decryption', () => {
       encryptionResult2.ephemeralPublicKey,
     );
 
-    // Decrypt both to verify correctness
+    // Расшифровываем оба сообщения для проверки корректности
     const decryptedMessage1 = ecies.decrypt(
       encryptionResult1.ciphertext,
       encryptionResult1.mac,
@@ -212,7 +234,7 @@ describe('ECIES Encryption and Decryption', () => {
       keyPair.privateKey,
     );
 
-    // Both should correctly decrypt to the original message
+    // Оба должны корректно расшифровываться до исходного сообщения
     expect(decryptedMessage1).toEqual(message);
     expect(decryptedMessage2).toEqual(message);
   });
